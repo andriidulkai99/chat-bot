@@ -29,6 +29,24 @@ const getZoomAPIAccessToken = async () => {
     }
 };
 
+const getCollaborationDevices = async (token) => {
+    try {
+        const resp = await axios({
+            method: "GET",
+            url:
+                "https://api.zoom.us/v2/users/me/collaboration_devices",
+            headers: {
+                Authorization: "Bearer " + `${token}`,
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+        });
+        return resp.data;
+    } catch (err) {
+        // Handle Error Here
+        console.error(err);
+    }
+};
+
 const getUserDetails = async (token) => {
     try {
         const resp = await axios({
@@ -72,5 +90,6 @@ function generateSignature(key, secret, meetingNumber, role) {
 module.exports = {
     getZoomAPIAccessToken,
     generateSignature,
-    getUserDetails
+    getUserDetails,
+    getCollaborationDevices
 };

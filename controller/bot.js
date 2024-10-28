@@ -1,5 +1,6 @@
 const borRouter = require('../router/bot')
 const zoomApi = require("../api/zoomAPI");
+const openai = require("../api/openai");
 
 const getZoomSignature = async (req, res) => {
     const { meetingId, role } = req.body;
@@ -20,9 +21,22 @@ const getUserInfo = async (req, res) => {
     res.send(user)
 }
 
+const getCollaborationDevices = async (req, res) => {
+    const token = await zoomApi.getZoomAPIAccessToken()
+    const user = await zoomApi.getCollaborationDevices(token)
+    res.send(user)
+}
+
+const sendMessageToAI = async (req, res) => {
+    const test = openai.sendMessageToAI()
+    res.send(test)
+}
+
 
 module.exports = {
     getZoomSignature,
     getZoomAPIAccessToken,
-    getUserInfo
+    getUserInfo,
+    getCollaborationDevices,
+    sendMessageToAI
 };

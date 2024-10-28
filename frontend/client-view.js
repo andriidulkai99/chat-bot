@@ -7,9 +7,10 @@ ZoomMtg.i18n.load('en-US')
 ZoomMtg.i18n.reload('en-US')
 
 let transcription = ''
-const meetingNumber = "99861126910";
-const meetingPassword = "xju8XitIpujNvzhiJgQPndMR50yd08.1";
+const meetingNumber = "92145048563";
+const meetingPassword = "6QwAvoTqbWlY74tkAA1mdzpWbccDM0.1";
 const userId = "RGkVRpEVR82bYwxHM8Qf4g"
+const userName = 'Andrii Dulkai'
 
 async function startAudioStreaming(blob) {
     // Підключення до WebSocket
@@ -54,28 +55,29 @@ const recordingAudio = async () => {
                 },
             })
             transcription = data.transcription;
-
-            console.log(userId)
             try {
                 ZoomMtg.getAttendeeslist({
-                    success: function (res) {
-                        console.log(res); // Тут шукайте потрібний ID
+                    success: function (e) {
+                        const user = e.result.attendeesList.find(el => el.userName === userName)
+
+                        if(transcription.length > 0){
+                            ZoomMtg.sendChat({
+                                message: transcription,
+                                userId: user.userId,
+                                success: function (){
+                                    console.log('test4')
+                                },
+                                error: function (e) {
+                                    console.log(e)
+                                    console.log('16785408')
+                                }
+                            })
+                        }
                     },
                     error: function (err) {
                         console.log(err);
                     }
                 });
-                ZoomMtg.sendChat({
-                    message: 'test4',
-                    userId: 16778240,
-                    success: function (){
-                        console.log('test4')
-                    },
-                    error: function (e) {
-                        console.log(e)
-                        console.log('iQicvz4ZSBqy2ng9Hi39HA')
-                    }
-                })
             } catch (e) {
                 console.log(e)
             }
@@ -88,7 +90,7 @@ const recordingAudio = async () => {
                 mediaRecorder.stop();
                 mediaRecorder.start();
             }
-        }, 5000);
+        }, 2000);
     }, function(error) {
         console.error(JSON.stringify(error));
     });
