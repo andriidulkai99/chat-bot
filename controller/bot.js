@@ -28,7 +28,7 @@ const getCollaborationDevices = async (req, res) => {
 }
 
 const sendMessageToAI = async (req, res) => {
-    const test = openai.sendMessageToAI()
+    const test = await openai.sendMessageToAI('Hello world!','test')
     res.send(test)
 }
 

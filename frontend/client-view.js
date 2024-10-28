@@ -7,9 +7,8 @@ ZoomMtg.i18n.load('en-US')
 ZoomMtg.i18n.reload('en-US')
 
 let transcription = ''
-const meetingNumber = "92145048563";
-const meetingPassword = "6QwAvoTqbWlY74tkAA1mdzpWbccDM0.1";
-const userId = "RGkVRpEVR82bYwxHM8Qf4g"
+const meetingNumber = "99216197988";
+const meetingPassword = "EorXsZXstejp9t0MAzabuyxYKLrbbB.1";
 const userName = 'Andrii Dulkai'
 
 async function startAudioStreaming(blob) {
@@ -35,65 +34,68 @@ const recordingAudio = async () => {
     let mediaRecorder;
     let audioChunks = [];
 
-    await navigator.getUserMedia({
-        audio: true
-    }, function(stream) {
-        mediaRecorder = new MediaRecorder(stream);
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
 
-        mediaRecorder.ondataavailable = (event) => {
-            audioChunks.push(event.data);
-        };
+    mediaRecorder.ondataavailable = (event) => {
+        audioChunks.push(event.data);
+    };
 
-        mediaRecorder.onstop = async () => {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-            const formData = new FormData();
-            formData.append('file', audioBlob, 'audio.webm');
+    mediaRecorder.onstop = async () => {
+        // Створюємо Blob з аудіо і відправляємо його на сервер
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const formData = new FormData();
+        formData.append('file', audioBlob, 'audio.webm');
 
-            const {data} = await axios.post('http://localhost:3001/file', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data', // Додаємо заголовок
-                },
-            })
-            transcription = data.transcription;
-            try {
-                ZoomMtg.getAttendeeslist({
-                    success: function (e) {
-                        const user = e.result.attendeesList.find(el => el.userName === userName)
+        // Відправлення запису на бекенд
+        try {
+            const { data } = await axios.post('http://localhost:3001/file', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            const transcription = data.transcription;
+            audioChunks = []; // Очищення масиву після надсилання
 
-                        if(transcription.length > 0){
-                            ZoomMtg.sendChat({
-                                message: transcription,
-                                userId: user.userId,
-                                success: function (){
-                                    console.log('test4')
-                                },
-                                error: function (e) {
-                                    console.log(e)
-                                    console.log('16785408')
-                                }
-                            })
-                        }
-                    },
-                    error: function (err) {
-                        console.log(err);
+            // Обробка результатів Zoom API
+            ZoomMtg.getAttendeeslist({
+                success: function (e) {
+                    const user = e.result.attendeesList.find(el => el.userName === userName);
+
+                    if (transcription.length > 0) {
+                        ZoomMtg.sendChat({
+                            message: transcription,
+                            userId: user.userId,
+                            success: function () { console.log('Message sent'); },
+                            error: function (e) { console.error(e); },
+                        });
                     }
-                });
-            } catch (e) {
-                console.log(e)
-            }
-        };
+                },
+                error: function (err) { console.error(err); },
+            });
+        } catch (error) {
+            console.error('Error sending audio:', error);
+        }
+    };
 
-        mediaRecorder.start();
+    // Початок запису
+    mediaRecorder.start();
 
-        setInterval(() => {
-            if (mediaRecorder.state === 'recording') {
-                mediaRecorder.stop();
-                mediaRecorder.start();
-            }
-        }, 2000);
-    }, function(error) {
-        console.error(JSON.stringify(error));
-    });
+    // Кожні 60 секунд зупиняємо та знову запускаємо запис
+    setInterval(() => {
+        if (mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();  // Зупиняємо запис, що тривав 60 секунд
+            mediaRecorder.start(); // Починаємо новий запис
+        }
+    }, 60000); // 60000 мс = 60 секунд
+}
+
+function playRecordedAudio(audioBlob) {
+    if (audioBlob) {
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        audio.play();
+    } else {
+        console.log('Аудіо не записано');
+    }
 }
 async function startMeeting() {
 
@@ -113,8 +115,6 @@ async function startMeeting() {
         })
         .then(async data => {
             document.getElementById('zmmtg-root').style.display = 'block'
-            console.log(data.signature)
-            await recordingAudio()
             ZoomMtg.init({
                 leaveUrl: 'https://example.com/thanks-for-joining',
                 isSupportAV: true,

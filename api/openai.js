@@ -27,7 +27,7 @@ const sendMessageToAI = async (transcription, promt) => {
         const completion = await axios.post('https://api.openai.com/v1/chat/completions', {
             model: "gpt-4o-mini",
             messages: [
-                {"role": "system", "content": promt},
+                {"role": "system", "content": systemMessage},
                 {"role": "user", "content": transcription }
             ],
             temperature: 0.7
@@ -37,7 +37,11 @@ const sendMessageToAI = async (transcription, promt) => {
                 Authorization: "Bearer " + process.env.OPENAI_API_KEY,
             }
         })
-        return completion.data;
+
+        if(completion.data.choices && completion.data.choices.length > 0) {
+            return completion.data.choices[0].message.content;
+        }
+        return 'test';
     } catch (err) {
         // Handle Error Here
         console.error(err);

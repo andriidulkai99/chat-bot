@@ -9,6 +9,7 @@ const { createClient, LiveTranscriptionEvents} = require('@deepgram/sdk');
 const {transcribeAudio} = require("./api/deepgram");
 require('dotenv').config();
 const multer  = require('multer')
+const openai = require("./api/openai");
 const storage = multer.memoryStorage()
 const upload = multer({ storage: storage })
 const deepgram = createClient(process.env.DEEP_GRAM_KEY);
@@ -55,7 +56,7 @@ app.post('/file', upload.single('file'), async (req,res) => {
     try {
         // Транскрибуємо аудіо з буфера
         const { result, error } = await deepgram.listen.prerecorded.transcribeFile(req.file.buffer, {
-            model: 'nova', // Вкажіть модель, яку хочете використовувати
+            model: 'nova-2-meeting', // Вкажіть модель, яку хочете використовувати
             punctuate: true, // Додати розділові знаки
         });
 
@@ -71,8 +72,13 @@ app.post('/file', upload.single('file'), async (req,res) => {
         console.log('----------------------')
         console.log(result.results.channels[0].alternatives)
 
-        const text = result.results.channels[0].alternatives[0].transcript
-        res.status(200).json({ transcription: text });
+        const text = result.results.channels[0].alternatives[0].transcript;
+
+        if(text.length) {
+            const resultText = await openai.sendMessageToAI(text,'test')
+            return res.status(200).json({ transcription: resultText });
+        }
+        res.status(200).json({ transcription: '' });
     } catch (err) {
         console.error('Unexpected error:', err);
         res.status(500).send('Unexpected error occurred');
