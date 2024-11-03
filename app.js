@@ -56,6 +56,8 @@ app.post('/file', upload.single('file'), async (req,res) => {
         return res.status(400).send('No file uploaded.');
     }
 
+    console.log(req.file.buffer)
+
     try {
         // Транскрибуємо аудіо з буфера
         const { result, error } = await deepgram.listen.prerecorded.transcribeFile(req.file.buffer, {
