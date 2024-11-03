@@ -7,6 +7,7 @@ const { Server } = require('socket.io');
 const http = require("http");
 const { createClient, LiveTranscriptionEvents} = require('@deepgram/sdk');
 const {transcribeAudio} = require("./api/deepgram");
+const path = require("path");
 require('dotenv').config();
 const multer  = require('multer')
 const openai = require("./api/openai");
@@ -19,6 +20,8 @@ var port = process.env.PORT || '3001';
 
 app.use(cors());
 app.use(express.json());
+
+app.use('/frontend', express.static(path.join(__dirname, 'frontend')));
 
 var server = http.createServer(app);
 const io = new Server(server, {
@@ -84,5 +87,14 @@ app.post('/file', upload.single('file'), async (req,res) => {
         res.status(500).send('Unexpected error occurred');
     }
 })
+
+app.get('/test', (req, res) => {
+    console.log(12334)
+    res.status(200).send('success');
+})
+
+app.get("/bot-page", (req, res) => {
+    res.sendFile(path.join(__dirname, "frontend", "index.html"));
+});
 
 server.listen(port);

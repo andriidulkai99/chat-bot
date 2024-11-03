@@ -3,6 +3,7 @@ const axios = require("axios");
 const btoa = require("btoa");
 const jwt = require('jsonwebtoken');
 const KJUR = require('jsrsasign')
+const stream = require("node:stream");
 const getZoomAPIAccessToken = async () => {
     try {
         const base_64 = btoa(process.env.ZOOM_CLIENT_ID + ":" + process.env.ZOOM_CLIENT_SECRET);
@@ -22,7 +23,93 @@ const getZoomAPIAccessToken = async () => {
 
         });
         //
-        return resp.data.access_token;
+        return resp.data;
+    } catch (err) {
+        // Handle Error Here
+        console.error(err);
+    }
+};
+
+const getAccessToken = async (code ) => {
+    try {
+        const base_64 = btoa(process.env.ZOOM_MEETING_SDK_KEY + ":" + process.env.ZOOM_MEETING_SDK_SECRET);
+
+        const resp = await axios({
+            method: "POST",
+            url:
+                "https://zoom.us/oauth/token",
+            headers: {
+                Authorization: "Basic " + `${base_64}`,
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            data: {
+                grant_type: "authorization_code",
+                code: code,
+                redirect_uri: "https://1f80-94-154-212-157.ngrok-free.app/auth/callback"
+            }
+
+        });
+
+        console.log(resp.data)
+        //
+        return {
+            access_token: resp.data.access_token,
+            refresh_token: resp.data.refresh_token
+        };
+    } catch (err) {
+        // Handle Error Here
+        console.error(err);
+    }
+};
+
+const getAccessForRecording = async (token, meetingId) => {
+    try {
+        const resp = await axios({
+            method: "GET",
+            url:
+                `https://api.zoom.us/v2/meetings/${meetingId}/jointoken/local_recording`,
+            headers: {
+                Authorization: "Bearer " + `${token}`,
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+        });
+        return resp.data;
+    } catch (err) {
+        // Handle Error Here
+        console.error(err);
+    }
+};
+
+const getMeetingInfo = async (token, meetingId) => {
+    try {
+        const resp = await axios({
+            method: "GET",
+            url:
+                `https://api.zoom.us/v2/meetings/${meetingId}/`,
+            headers: {
+                Authorization: "Bearer " + `${token}`,
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+        });
+        return resp.data;
+    } catch (err) {
+        // Handle Error Here
+        console.error(err);
+    }
+};
+
+const getRecords = async (token, userId) => {
+    try {
+        const resp = await axios({
+            method: "GET",
+            url:
+                `https://api.zoom.us/v2/users/${userId}/records`,
+            headers: {
+                Authorization: "Bearer " + `${token}`,
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+        });
+        return resp.data;
     } catch (err) {
         // Handle Error Here
         console.error(err);
@@ -65,6 +152,31 @@ const getUserDetails = async (token) => {
     }
 };
 
+const getAppUserEntitlements = async (token, userId) => {
+    const params = {}
+
+    if(userId) {
+        params.userId = userId;
+    }
+
+    try {
+        const resp = await axios({
+            method: "GET",
+            url:
+                "https://api.zoom.us/v2/marketplace/monetization/entitlements",
+            headers: {
+                Authorization: "Bearer " + `${token}`,
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            params: params,
+        });
+        return resp.data;
+    } catch (err) {
+        // Handle Error Here
+        console.error(err);
+    }
+};
+
 function generateSignature(key, secret, meetingNumber, role) {
 
     const iat = Math.round(new Date().getTime() / 1000) - 30
@@ -91,5 +203,9 @@ module.exports = {
     getZoomAPIAccessToken,
     generateSignature,
     getUserDetails,
-    getCollaborationDevices
+    getCollaborationDevices,
+    getAccessForRecording,
+    getMeetingInfo,
+    getAccessToken,
+    getRecords
 };
